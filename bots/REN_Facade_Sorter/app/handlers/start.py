@@ -76,27 +76,27 @@ def register_handlers(bot: AsyncTeleBot):
         """
         Handle the /help command.
         """
-        help_text = r"""🆘 **REN Facade Sorter Bot Help**
+        help_text = """🆘 *REN Facade Sorter Bot Help*
 
-**Available commands:**
+*Available commands:*
 • `/start` - start working with the bot
 • `/help` - show this help
 • `/cancel` - cancel current operation
 
-**Photo upload process:**
-1. **Choose inspection** - BW or SR
-2. **Select block** - A or B
-3. **Specify orientation** - cardinal direction or courtyard
-4. **Choose level** - GF or floors from L1 to L11
-5. **Upload photos** - send one or multiple photos
+*Photo upload process:*
+1. *Choose inspection* - BW or SR
+2. *Select block* - A or B
+3. *Specify orientation* - cardinal direction or courtyard
+4. *Choose level* - GF or floors from L1 to L11
+5. *Upload photos* - send one or multiple photos
 
-**Save structure:**
+*Save structure:*
 Photos are saved to the folder:
 `structure_inspections/{Inspection}/{Block}/{Level}/{Orientation}/unsorted/`
 
-**Path examples:**
+*Path examples:*
 • BW, Block A, East, L5 → `structure_inspections/BW/A/L5/East/unsorted/`
-• SR, Block B, Courtyard North, GF → `structure_inspections/SR/B/GF/Courtyard\_North/unsorted/`
+• SR, Block B, Courtyard North, GF → `structure_inspections/SR/B/GF/Courtyard_North/unsorted/`
 
 ❓ If you encounter problems, use `/cancel` and start over with `/start`"""
 
