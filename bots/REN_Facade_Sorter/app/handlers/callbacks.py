@@ -397,68 +397,7 @@ Ready to upload photos?"""
         await bot.answer_callback_query(call.id, "🏠 Starting over...")
         logger.info(f"User {call.from_user.id} started over")
     
-    @bot.callback_query_handler(func=lambda call: call.data == "save_photos")
-    async def handle_save_photos(call: CallbackQuery):
-        """
-        Handle save photos callback - save accumulated photos.
-        """
-        from .photos import save_photos
-        
-        user_id = call.from_user.id
-        chat_id = call.message.chat.id
-        
-        # Получаем данные пользователя
-        async with bot.retrieve_data(user_id, chat_id) as data:
-            photos = data.get('photos', [])
-            
-            if not photos:
-                await bot.answer_callback_query(call.id, "❌ No photos to save!")
-                return
-            
-            # Переходим к обработке фотографий
-            await bot.set_state(user_id, PhotoUploadStates.processing_photos, chat_id)
-        
-        # Удаляем текущее сообщение
-        await bot.delete_message(chat_id, call.message.message_id)
-        
-        # Обрабатываем фотографии
-        await save_photos(bot, user_id, chat_id, data)
-        
-        await bot.answer_callback_query(call.id, "💾 Saving photos...")
-        logger.info(f"User {user_id} triggered photo save via button")
-    
-    @bot.callback_query_handler(func=lambda call: call.data == "cancel_upload")
-    async def handle_cancel_upload(call: CallbackQuery):
-        """
-        Handle cancel upload - clear photos and return to start.
-        """
-        user_id = call.from_user.id
-        chat_id = call.message.chat.id
-        
-        # Очищаем фотографии из данных пользователя
-        async with bot.retrieve_data(user_id, chat_id) as data:
-            photo_count = len(data.get('photos', []))
-            data['photos'] = []
-        
-        # Очищаем состояние пользователя
-        await bot.delete_state(user_id, chat_id)
-        
-        cancel_text = f"""❌ **Upload Cancelled**
 
-{photo_count} photos were discarded.
-
-Use /start to begin again."""
-
-        await bot.edit_message_text(
-            cancel_text,
-            chat_id,
-            call.message.message_id,
-            parse_mode='Markdown'
-        )
-        
-        await bot.answer_callback_query(call.id, "❌ Upload cancelled")
-        logger.info(f"User {user_id} cancelled photo upload ({photo_count} photos discarded)")
-    
     @bot.callback_query_handler(func=lambda call: call.data.startswith("add_more_"))
     async def handle_add_more(call: CallbackQuery):
         """

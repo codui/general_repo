@@ -147,28 +147,6 @@ def confirm_selection_menu(inspection: str, block: str, orientation: str, level:
     return keyboard
 
 
-def photo_upload_menu(photo_count: int) -> InlineKeyboardMarkup:
-    """
-    Menu shown during photo upload process.
-    
-    Args:
-        photo_count: Number of photos currently uploaded
-    """
-    keyboard = InlineKeyboardMarkup(row_width=1)
-    
-    if photo_count > 0:
-        keyboard.add(
-            InlineKeyboardButton(f"💾 Save {photo_count} Photo{'s' if photo_count != 1 else ''}", 
-                               callback_data="save_photos")
-        )
-    
-    keyboard.add(
-        InlineKeyboardButton("❌ Cancel", callback_data="cancel_upload")
-    )
-    
-    return keyboard
-
-
 def post_upload_menu(inspection: str, block: str, orientation: str, level: str) -> InlineKeyboardMarkup:
     """
     Menu shown after successful photo upload with options to continue.

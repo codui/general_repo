@@ -18,7 +18,4 @@ class PhotoUploadStates(StatesGroup):
     confirming_selection = State()
     
     # Waiting for photos
-    waiting_for_photos = State()
-    
-    # Processing uploaded photos
-    processing_photos = State() 
+    waiting_for_photos = State() 

@@ -43,3 +43,7 @@ htmlcov/
 
 # Jupyter
 .ipynb_checkpoints/
+
+# structure_inspections/
+structure_inspections/BW/
+structure_inspections/SR/
