@@ -8,6 +8,7 @@ from telebot.types import CallbackQuery
 from app.utils.logger import logger
 from app.keyboards import selection_menu, level_menu, confirm_selection_menu
 from app.states import PhotoUploadStates
+from app.messages import WELCOME_MESSAGE, SCHEME_NOT_FOUND_WARNING, BLOCK_SCHEME_NOT_FOUND_WARNING
 
 
 def escape_markdown(text: str) -> str:
@@ -136,7 +137,7 @@ def register_handlers(bot: AsyncTeleBot):
             logger.warning(f"Block scheme image not found at {scheme_path}")
             await bot.send_message(
                 call.message.chat.id,
-                level_text + f"\n\n⚠️ *Block {block} scheme image not found*",
+                level_text + BLOCK_SCHEME_NOT_FOUND_WARNING.format(block),
                 reply_markup=level_menu(inspection, block, orientation),
                 parse_mode='Markdown'
             )
@@ -242,20 +243,6 @@ Ready to upload photos?"""
         await bot.delete_message(call.message.chat.id, call.message.message_id)
         
         # Отправляем исходное сообщение с картинкой схемы
-        back_text = """🏢 **REN Facade Sorter Bot**
-
-👋 Welcome! This bot will help you upload and sort facade photos of the building.
-
-📸 **How it works:**
-1. Choose inspection type (BW or SR)
-2. Select building block (A or B)
-3. Specify orientation (cardinal direction or courtyard)
-4. Choose level (GF or L1-L11)
-5. Upload photos
-
-🔄 The bot will automatically save photos to the correct folder.
-
-**Please provide the details of the apartment for which you would like to upload photos:**"""
 
         # Путь к общей схеме
         scheme_path = os.path.join("app", "assets", "images", "scheme", "scheme.png")
@@ -266,7 +253,7 @@ Ready to upload photos?"""
                 await bot.send_photo(
                     call.message.chat.id,
                     photo,
-                    caption=back_text,
+                    caption=WELCOME_MESSAGE,
                     reply_markup=selection_menu(inspection=inspection, block=block),
                     parse_mode='Markdown'
                 )
@@ -275,7 +262,7 @@ Ready to upload photos?"""
             logger.warning(f"General scheme image not found at {scheme_path}")
             await bot.send_message(
                 call.message.chat.id,
-                back_text + "\n\n⚠️ *Building scheme image not found*",
+                WELCOME_MESSAGE + SCHEME_NOT_FOUND_WARNING,
                 reply_markup=selection_menu(inspection=inspection, block=block),
                 parse_mode='Markdown'
             )
@@ -332,7 +319,7 @@ Ready to upload photos?"""
             logger.warning(f"Block scheme image not found at {scheme_path}")
             await bot.send_message(
                 call.message.chat.id,
-                level_text + f"\n\n⚠️ *Block {block} scheme image not found*",
+                level_text + BLOCK_SCHEME_NOT_FOUND_WARNING.format(block),
                 reply_markup=level_menu(inspection, block, orientation),
                 parse_mode='Markdown'
             )
@@ -416,20 +403,6 @@ Send your photos to continue uploading to this location.
         await bot.delete_message(chat_id, call.message.message_id)
         
         # Отправляем начальное меню с картинкой схемы
-        start_text = """🏢 **REN Facade Sorter Bot**
-
-👋 Welcome! This bot will help you upload and sort facade photos of the building.
-
-📸 **How it works:**
-1. Choose inspection type (BW or SR)
-2. Select building block (A or B)
-3. Specify orientation (cardinal direction or courtyard)
-4. Choose level (GF or L1-L11)
-5. Upload photos
-
-🔄 The bot will automatically save photos to the correct folder.
-
-**Please provide the details of the apartment for which you would like to upload photos:**"""
 
         # Путь к общей схеме
         scheme_path = os.path.join("app", "assets", "images", "scheme", "scheme.png")
@@ -440,7 +413,7 @@ Send your photos to continue uploading to this location.
                 await bot.send_photo(
                     chat_id,
                     photo,
-                    caption=start_text,
+                    caption=WELCOME_MESSAGE,
                     reply_markup=selection_menu(),
                     parse_mode='Markdown'
                 )
@@ -449,7 +422,7 @@ Send your photos to continue uploading to this location.
             logger.warning(f"General scheme image not found at {scheme_path}")
             await bot.send_message(
                 chat_id,
-                start_text + "\n\n⚠️ *Building scheme image not found*",
+                WELCOME_MESSAGE + SCHEME_NOT_FOUND_WARNING,
                 reply_markup=selection_menu(),
                 parse_mode='Markdown'
             )
