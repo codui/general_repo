@@ -1,16 +1,18 @@
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 ASITE_BASE_URL = "https://system.asite.com"
 ASITE_LOGIN_URL = f"{ASITE_BASE_URL}/login"
 
-ASITE_USERNAME = "morosan12@yahoo.com"
-ASITE_PASSWORD = "kysfyr-3nemfa-difcYx"
+ASITE_USERNAME = os.getenv("ASITE_USERNAME", "morosan12@yahoo.com")
+ASITE_PASSWORD = os.getenv("ASITE_PASSWORD", "kysfyr-3nemfa-difcYx")
 
 # Путь к ChromeDriver
-# Пример: CHROME_DRIVER_PATH = "/usr/local/bin/chromedriver" (для Linux/macOS)
-# Пример: CHROME_DRIVER_PATH = "C:\\path\\to\\chromedriver.exe" (для Windows)
-# CHROME_DRIVER_PATH = os.path.join(os.path.dirname(__file__), "chromedriver")
-CHROME_DRIVER_PATH = None
+CHROME_DRIVER_PATH = os.getenv("CHROME_DRIVER_PATH", None)
+
+DOWNLOAD_DIR = os.getenv("DOWNLOAD_DIR", os.path.join(os.path.expanduser("~"), "Downloads", "asite_downloads"))
 
 DEFAULT_WAIT_TIME = 15
 PAGE_LOAD_TIMEOUT = 45

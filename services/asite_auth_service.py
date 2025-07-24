@@ -79,6 +79,26 @@ class AsiteAuthService:
             login_button.click()
 
             logger.info("Authentication completed successfully!")
+        
+            try:
+                self.driver.switch_to.default_content() 
+                logger.info("Switched to default content to check for modal.")
+
+                btn_modal_xpath: str = (
+                    '//div[contains(@class, "modal-scrollable")]//*[@id="myModal-annoucement"]/div[1]/button'
+                )
+                logger.info(f"Attempting to close modal window using XPath: {btn_modal_xpath}")
+                
+                # Use a shorter wait time for optional elements like modals
+                btn_modal = WebDriverWait(self.driver, 5).until(
+                    EC.visibility_of_element_located((By.XPATH, btn_modal_xpath))
+                )
+                btn_modal.click()
+                logger.info("Modal window closed.")
+            except Exception: # Catching a broad Exception to just log and continue if modal not found
+                logger.info("No modal window found or unable to close it.")
+            # --- End: Close modal window ---
+
             return True
 
         except TimeoutException as e:
@@ -100,6 +120,7 @@ class AsiteAuthService:
             logger.error(f"Current URL: {self.driver.current_url}")
             logger.error(f"Page title: {self.driver.title}")
             try:
+                # Try to get page source from current context (iframe or default)
                 logger.error(f"Page HTML (after error, first 2000 characters):\n{self.driver.page_source[:2000]}...")
             except Exception:
                 logger.error("Could not retrieve page HTML after error.")
