@@ -21,7 +21,7 @@ def selection_menu(
     """
     keyboard = InlineKeyboardMarkup()
     
-    # Первый ряд - выбор инспекции
+    # First row - inspection selection
     row1 = []
     bw_text = "✅ BW" if inspection == "BW" else "BW"
     sr_text = "✅ SR" if inspection == "SR" else "SR"
@@ -30,7 +30,7 @@ def selection_menu(
     row1.append(InlineKeyboardButton(sr_text, callback_data="inspection_SR"))
     keyboard.row(*row1)
     
-    # Второй ряд - выбор блока (показывается только если выбрана инспекция)
+    # Second row - block selection (shown only if inspection is selected)
     if inspection:
         row2 = []
         block_a_text = "✅ Block A" if block == "A" else "Block A"
@@ -40,9 +40,9 @@ def selection_menu(
         row2.append(InlineKeyboardButton(block_b_text, callback_data="block_B"))
         keyboard.row(*row2)
         
-        # Направления (показываются только если выбран блок)
+        # Directions (shown only if block is selected)
         if block:
-            # Основные направления для всех блоков
+            # Main directions for all blocks
             row3 = []
             row4 = []
             
@@ -89,21 +89,30 @@ def level_menu(inspection: str, block: str, orientation: str) -> InlineKeyboardM
         block: Selected block
         orientation: Selected orientation
     """
-    keyboard = InlineKeyboardMarkup(row_width=3)
+    keyboard = InlineKeyboardMarkup()
     
-    # Добавляем Ground Floor
+    # First row - Ground Floor
     keyboard.add(InlineKeyboardButton("🏢 GF", callback_data=f"level_{inspection}_{block}_{orientation}_GF"))
     
-    # Добавляем уровни L1-L11
-    levels = []
-    for i in range(1, 12):
-        levels.append(InlineKeyboardButton(f"L{i}", callback_data=f"level_{inspection}_{block}_{orientation}_L{i}"))
+    # Second row - L1 to L4
+    row2 = []
+    for i in range(1, 5):
+        row2.append(InlineKeyboardButton(f"L{i}", callback_data=f"level_{inspection}_{block}_{orientation}_L{i}"))
+    keyboard.row(*row2)
     
-    # Группируем по 3 кнопки в ряд
-    for i in range(0, len(levels), 3):
-        keyboard.row(*levels[i:i+3])
+    # Third row - L5 to L8
+    row3 = []
+    for i in range(5, 9):
+        row3.append(InlineKeyboardButton(f"L{i}", callback_data=f"level_{inspection}_{block}_{orientation}_L{i}"))
+    keyboard.row(*row3)
     
-    # Кнопка возврата к выбору параметров
+    # Fourth row - L9 to L11
+    row4 = []
+    for i in range(9, 12):
+        row4.append(InlineKeyboardButton(f"L{i}", callback_data=f"level_{inspection}_{block}_{orientation}_L{i}"))
+    keyboard.row(*row4)
+    
+    # Button to return to selection of parameters
     keyboard.add(
         InlineKeyboardButton("⬅️ Back to Selection", callback_data="back_to_selection")
     )
@@ -138,15 +147,46 @@ def confirm_selection_menu(inspection: str, block: str, orientation: str, level:
     return keyboard
 
 
-def upload_complete_menu() -> InlineKeyboardMarkup:
+def photo_upload_menu(photo_count: int) -> InlineKeyboardMarkup:
     """
-    Menu shown after successful photo upload.
+    Menu shown during photo upload process.
+    
+    Args:
+        photo_count: Number of photos currently uploaded
+    """
+    keyboard = InlineKeyboardMarkup(row_width=1)
+    
+    if photo_count > 0:
+        keyboard.add(
+            InlineKeyboardButton(f"💾 Save {photo_count} Photo{'s' if photo_count != 1 else ''}", 
+                               callback_data="save_photos")
+        )
+    
+    keyboard.add(
+        InlineKeyboardButton("❌ Cancel", callback_data="cancel_upload")
+    )
+    
+    return keyboard
+
+
+def post_upload_menu(inspection: str, block: str, orientation: str, level: str) -> InlineKeyboardMarkup:
+    """
+    Menu shown after successful photo upload with options to continue.
+    
+    Args:
+        inspection: Current inspection
+        block: Current block
+        orientation: Current orientation
+        level: Current level
     """
     keyboard = InlineKeyboardMarkup(row_width=1)
     
     keyboard.add(
-        InlineKeyboardButton("📸 Upload More Photos", callback_data="start_over"),
-        InlineKeyboardButton("✅ Finish", callback_data="finish")
+        InlineKeyboardButton("📸 Add More to This Location", 
+                           callback_data=f"add_more_{inspection}_{block}_{orientation}_{level}")
+    )
+    keyboard.add(
+        InlineKeyboardButton("🏠 Next Location", callback_data="next_location")
     )
     
-    return keyboard 
+    return keyboard

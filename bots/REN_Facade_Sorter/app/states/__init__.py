@@ -8,17 +8,17 @@ from telebot.asyncio_handler_backends import State, StatesGroup
 class PhotoUploadStates(StatesGroup):
     """States for photo upload flow."""
     
-    # Поэтапный выбор параметров (инспекция, блок, ориентация)
+    # Step-by-step selection of parameters (inspection, block, orientation)
     selecting_parameters = State()
     
-    # Выбор уровня (этажа)
+    # Choose level (floor)
     selecting_level = State()
     
-    # Подтверждение выбора
+    # Confirmation of selection
     confirming_selection = State()
     
-    # Ожидание загрузки фотографий
+    # Waiting for photos
     waiting_for_photos = State()
     
-    # Обработка загруженных фотографий
+    # Processing uploaded photos
     processing_photos = State() 

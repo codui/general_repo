@@ -211,10 +211,8 @@ Ready to upload photos?"""
 **Now send your photos:**
 • You can send **multiple photos** at once
 • Supported formats: JPG, PNG
-• When finished, use /done command
 
 **Commands:**
-• /done - finish uploading and save photos
 • /cancel - cancel and start over"""
 
         await bot.edit_message_caption(
@@ -399,28 +397,179 @@ Ready to upload photos?"""
         await bot.answer_callback_query(call.id, "🏠 Starting over...")
         logger.info(f"User {call.from_user.id} started over")
     
-    @bot.callback_query_handler(func=lambda call: call.data == "finish")
-    async def handle_finish(call: CallbackQuery):
+    @bot.callback_query_handler(func=lambda call: call.data == "save_photos")
+    async def handle_save_photos(call: CallbackQuery):
         """
-        Handle finish - end the session.
+        Handle save photos callback - save accumulated photos.
         """
-        # Очищаем состояние пользователя
-        await bot.delete_state(call.from_user.id, call.message.chat.id)
+        from .photos import save_photos
         
-        finish_text = """✅ **Session Completed**
+        user_id = call.from_user.id
+        chat_id = call.message.chat.id
+        
+        # Получаем данные пользователя
+        async with bot.retrieve_data(user_id, chat_id) as data:
+            photos = data.get('photos', [])
+            
+            if not photos:
+                await bot.answer_callback_query(call.id, "❌ No photos to save!")
+                return
+            
+            # Переходим к обработке фотографий
+            await bot.set_state(user_id, PhotoUploadStates.processing_photos, chat_id)
+        
+        # Удаляем текущее сообщение
+        await bot.delete_message(chat_id, call.message.message_id)
+        
+        # Обрабатываем фотографии
+        await save_photos(bot, user_id, chat_id, data)
+        
+        await bot.answer_callback_query(call.id, "💾 Saving photos...")
+        logger.info(f"User {user_id} triggered photo save via button")
+    
+    @bot.callback_query_handler(func=lambda call: call.data == "cancel_upload")
+    async def handle_cancel_upload(call: CallbackQuery):
+        """
+        Handle cancel upload - clear photos and return to start.
+        """
+        user_id = call.from_user.id
+        chat_id = call.message.chat.id
+        
+        # Очищаем фотографии из данных пользователя
+        async with bot.retrieve_data(user_id, chat_id) as data:
+            photo_count = len(data.get('photos', []))
+            data['photos'] = []
+        
+        # Очищаем состояние пользователя
+        await bot.delete_state(user_id, chat_id)
+        
+        cancel_text = f"""❌ **Upload Cancelled**
 
-Thank you for using REN Facade Sorter Bot!
+{photo_count} photos were discarded.
 
-Your photos have been processed and saved to the appropriate folders.
+Use /start to begin again."""
 
-Use /start to begin a new session."""
-
-        await bot.edit_message_caption(
-            finish_text,
-            call.message.chat.id,
+        await bot.edit_message_text(
+            cancel_text,
+            chat_id,
             call.message.message_id,
             parse_mode='Markdown'
         )
         
-        await bot.answer_callback_query(call.id, "✅ Session finished!")
-        logger.info(f"User {call.from_user.id} finished session") 
+        await bot.answer_callback_query(call.id, "❌ Upload cancelled")
+        logger.info(f"User {user_id} cancelled photo upload ({photo_count} photos discarded)")
+    
+    @bot.callback_query_handler(func=lambda call: call.data.startswith("add_more_"))
+    async def handle_add_more(call: CallbackQuery):
+        """
+        Handle add more photos to the same location.
+        """
+        user_id = call.from_user.id
+        chat_id = call.message.chat.id
+        
+        # Парсим данные: "add_more_BW_A_East_L5"
+        parts = call.data.replace("add_more_", "").split("_")
+        if len(parts) < 4:
+            await bot.answer_callback_query(call.id, "❌ Invalid location data!")
+            return
+        
+        inspection = parts[0]
+        block = parts[1]
+        orientation = "_".join(parts[2:-1])  # Поддержка "Courtyard_East"
+        level = parts[-1]
+        
+        # Сохраняем данные локации
+        async with bot.retrieve_data(user_id, chat_id) as data:
+            data.update({
+                'inspection': inspection,
+                'block': block,
+                'orientation': orientation,
+                'level': level,
+                'photos': []  # Очищаем предыдущие фото
+            })
+        
+        # Переходим к состоянию ожидания фотографий
+        await bot.set_state(user_id, PhotoUploadStates.waiting_for_photos, chat_id)
+        
+        upload_text = f"""📸 **Ready for More Photos**
+
+**Current location:**
+• Inspection: **{inspection}**
+• Block: **{block}**
+• Orientation: **{orientation.replace('_', ' ')}**
+• Level: **{level}**
+
+Send your photos to continue uploading to this location.
+
+**Commands:**
+• /cancel - cancel and start over"""
+
+        await bot.edit_message_text(
+            upload_text,
+            chat_id,
+            call.message.message_id,
+            parse_mode='Markdown'
+        )
+        
+        await bot.answer_callback_query(call.id, "📸 Ready for more photos!")
+        logger.info(f"User {user_id} chose to add more photos to {inspection}/{block}/{level}/{orientation}")
+    
+    @bot.callback_query_handler(func=lambda call: call.data == "next_location")
+    async def handle_next_location(call: CallbackQuery):
+        """
+        Handle next location - start over with parameter selection.
+        """
+        user_id = call.from_user.id
+        chat_id = call.message.chat.id
+        
+        # Очищаем все данные пользователя
+        async with bot.retrieve_data(user_id, chat_id) as data:
+            data.clear()
+        
+        # Возвращаемся к начальному состоянию
+        await bot.set_state(user_id, PhotoUploadStates.selecting_parameters, chat_id)
+        
+        # Удаляем текущее сообщение
+        await bot.delete_message(chat_id, call.message.message_id)
+        
+        # Отправляем начальное меню с картинкой схемы
+        start_text = """🏢 **REN Facade Sorter Bot**
+
+👋 Welcome! This bot will help you upload and sort facade photos of the building.
+
+📸 **How it works:**
+1. Choose inspection type (BW or SR)
+2. Select building block (A or B)
+3. Specify orientation (cardinal direction or courtyard)
+4. Choose level (GF or L1-L11)
+5. Upload photos
+
+🔄 The bot will automatically save photos to the correct folder.
+
+**Please provide the details of the apartment for which you would like to upload photos:**"""
+
+        # Путь к общей схеме
+        scheme_path = os.path.join("app", "assets", "images", "scheme", "scheme.png")
+        
+        # Отправляем с общей схемой
+        if os.path.exists(scheme_path):
+            with open(scheme_path, 'rb') as photo:
+                await bot.send_photo(
+                    chat_id,
+                    photo,
+                    caption=start_text,
+                    reply_markup=selection_menu(),
+                    parse_mode='Markdown'
+                )
+        else:
+            # Если файл схемы не найден, отправляем только текст
+            logger.warning(f"General scheme image not found at {scheme_path}")
+            await bot.send_message(
+                chat_id,
+                start_text + "\n\n⚠️ *Building scheme image not found*",
+                reply_markup=selection_menu(),
+                parse_mode='Markdown'
+            )
+        
+        await bot.answer_callback_query(call.id, "🏠 Next location selected")
+        logger.info(f"User {user_id} moved to next location")
