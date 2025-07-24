@@ -164,7 +164,7 @@ def post_upload_menu(inspection: str, block: str, orientation: str, level: str) 
                            callback_data=f"add_more_{inspection}_{block}_{orientation}_{level}")
     )
     keyboard.add(
-        InlineKeyboardButton("🏠 Next Location", callback_data="next_location")
+        InlineKeyboardButton("🏠 Another Location", callback_data="next_location")
     )
     
     return keyboard

@@ -340,63 +340,7 @@ Ready to upload photos?"""
         await bot.answer_callback_query(call.id, "⬅️ Back to level selection")
         logger.info(f"User {call.from_user.id} went back to level selection")
     
-    @bot.callback_query_handler(func=lambda call: call.data == "start_over")
-    async def handle_start_over(call: CallbackQuery):
-        """
-        Handle start over - reset all data and return to beginning.
-        """
-        # Очищаем все данные пользователя
-        async with bot.retrieve_data(call.from_user.id, call.message.chat.id) as data:
-            data.clear()
-        
-        # Возвращаемся к начальному состоянию
-        await bot.set_state(call.from_user.id, PhotoUploadStates.selecting_parameters, call.message.chat.id)
-        
-        # Удаляем текущее сообщение
-        await bot.delete_message(call.message.chat.id, call.message.message_id)
-        
-        # Отправляем начальное меню с картинкой схемы
-        start_text = """🏢 **REN Facade Sorter Bot**
 
-👋 Welcome! This bot will help you upload and sort facade photos of the building.
-
-📸 **How it works:**
-1. Choose inspection type (BW or SR)
-2. Select building block (A or B)
-3. Specify orientation (cardinal direction or courtyard)
-4. Choose level (GF or L1-L11)
-5. Upload photos
-
-🔄 The bot will automatically save photos to the correct folder.
-
-**Please provide the details of the apartment for which you would like to upload photos:**"""
-
-        # Путь к общей схеме
-        scheme_path = os.path.join("app", "assets", "images", "scheme", "scheme.png")
-        
-        # Отправляем с общей схемой
-        if os.path.exists(scheme_path):
-            with open(scheme_path, 'rb') as photo:
-                await bot.send_photo(
-                    call.message.chat.id,
-                    photo,
-                    caption=start_text,
-                    reply_markup=selection_menu(),
-                    parse_mode='Markdown'
-                )
-        else:
-            # Если файл схемы не найден, отправляем только текст
-            logger.warning(f"General scheme image not found at {scheme_path}")
-            await bot.send_message(
-                call.message.chat.id,
-                start_text + "\n\n⚠️ *Building scheme image not found*",
-                reply_markup=selection_menu(),
-                parse_mode='Markdown'
-            )
-        
-        await bot.answer_callback_query(call.id, "🏠 Starting over...")
-        logger.info(f"User {call.from_user.id} started over")
-    
 
     @bot.callback_query_handler(func=lambda call: call.data.startswith("add_more_"))
     async def handle_add_more(call: CallbackQuery):
@@ -453,10 +397,10 @@ Send your photos to continue uploading to this location.
         await bot.answer_callback_query(call.id, "📸 Ready for more photos!")
         logger.info(f"User {user_id} chose to add more photos to {inspection}/{block}/{level}/{orientation}")
     
-    @bot.callback_query_handler(func=lambda call: call.data == "next_location")
-    async def handle_next_location(call: CallbackQuery):
+    @bot.callback_query_handler(func=lambda call: call.data in ["next_location", "start_over"])
+    async def handle_start_over(call: CallbackQuery):
         """
-        Handle next location - start over with parameter selection.
+        Handle start over/another location - reset all data and return to beginning.
         """
         user_id = call.from_user.id
         chat_id = call.message.chat.id
@@ -510,5 +454,9 @@ Send your photos to continue uploading to this location.
                 parse_mode='Markdown'
             )
         
-        await bot.answer_callback_query(call.id, "🏠 Next location selected")
-        logger.info(f"User {user_id} moved to next location")
+        # Определяем текст ответа в зависимости от действия
+        callback_text = "🏠 Another location selected" if call.data == "next_location" else "🏠 Starting over..."
+        await bot.answer_callback_query(call.id, callback_text)
+        
+        action = "moved to another location" if call.data == "next_location" else "started over"
+        logger.info(f"User {user_id} {action}")
