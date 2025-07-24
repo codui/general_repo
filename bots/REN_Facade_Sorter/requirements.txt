@@ -4,6 +4,7 @@ pydantic-settings
 
 # Telegram Bot API
 pytelegrambotapi
+aiohttp
 
 # Python-dotenv
 python-dotenv
@@ -12,4 +13,4 @@ python-dotenv
 loguru
 
 # Cache and FSM
-redis>=5.0.0
+# redis>=5.0.0
