@@ -19,12 +19,22 @@ class AsiteAuthService:
     def _initialize_driver(self):
         logger.info("Initializing WebDriver...")
         options = webdriver.ChromeOptions()
-        # options.add_argument("--headless") # Uncomment to see the browser
+        # options.add_argument("--headless")
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
         options.add_argument("--start-maximized")
         options.add_argument("--disable-blink-features=AutomationControlled")
         options.add_argument(f"--log-level={config.LOG_LEVEL}")
+        
+        prefs = {
+            "profile.default_content_setting_values.notifications": 2,
+            "download.default_directory": config.DOWNLOAD_DIR,
+            "download.prompt_for_download": False,
+            "directory_upgrade": True,
+            "safeBrowse.enabled": True,
+        }
+        options.add_experimental_option("prefs", prefs)
+
         options.add_experimental_option("excludeSwitches", ["enable-automation"])
         options.add_experimental_option("useAutomationExtension", False)
         options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36")
@@ -33,7 +43,7 @@ class AsiteAuthService:
             self.driver = webdriver.Chrome(executable_path=config.CHROME_DRIVER_PATH, options=options)
         else:
             self.driver = webdriver.Chrome(options=options)
-
+        time.sleep(3)
         self.driver.implicitly_wait(config.DEFAULT_WAIT_TIME)
         self.driver.set_page_load_timeout(config.PAGE_LOAD_TIMEOUT)
         logger.info("WebDriver initialized.")
@@ -89,15 +99,13 @@ class AsiteAuthService:
                 )
                 logger.info(f"Attempting to close modal window using XPath: {btn_modal_xpath}")
                 
-                # Use a shorter wait time for optional elements like modals
                 btn_modal = WebDriverWait(self.driver, 5).until(
                     EC.visibility_of_element_located((By.XPATH, btn_modal_xpath))
                 )
                 btn_modal.click()
                 logger.info("Modal window closed.")
-            except Exception: # Catching a broad Exception to just log and continue if modal not found
+            except Exception:
                 logger.info("No modal window found or unable to close it.")
-            # --- End: Close modal window ---
 
             return True
 
@@ -115,12 +123,10 @@ class AsiteAuthService:
         return False
 
     def _log_error_page_info(self):
-        """Logs page information in case of an error."""
         if self.driver:
             logger.error(f"Current URL: {self.driver.current_url}")
             logger.error(f"Page title: {self.driver.title}")
             try:
-                # Try to get page source from current context (iframe or default)
                 logger.error(f"Page HTML (after error, first 2000 characters):\n{self.driver.page_source[:2000]}...")
             except Exception:
                 logger.error("Could not retrieve page HTML after error.")
