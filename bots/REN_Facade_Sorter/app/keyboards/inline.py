@@ -9,7 +9,8 @@ from typing import Optional
 def selection_menu(
     inspection: Optional[str] = None, 
     block: Optional[str] = None,
-    orientation: Optional[str] = None
+    orientation: Optional[str] = None,
+    level: Optional[str] = None
 ) -> InlineKeyboardMarkup:
     """
     Dynamic selection menu with radio button logic.
@@ -18,6 +19,7 @@ def selection_menu(
         inspection: Selected inspection ('BW' or 'SR')
         block: Selected block ('A' or 'B')
         orientation: Selected orientation
+        level: Selected level
     """
     keyboard = InlineKeyboardMarkup()
     
@@ -43,22 +45,18 @@ def selection_menu(
         # Directions (shown only if block is selected)
         if block:
             # Main directions for all blocks
-            row3 = []
-            row4 = []
-            
+            directions_row = []
             east_text = "✅ East" if orientation == "East" else "🧭 East"
             north_text = "✅ North" if orientation == "North" else "🧭 North"
             south_text = "✅ South" if orientation == "South" else "🧭 South"
             west_text = "✅ West" if orientation == "West" else "🧭 West"
             
-            row3.append(InlineKeyboardButton(east_text, callback_data="orient_East"))
-            row3.append(InlineKeyboardButton(north_text, callback_data="orient_North"))
-            keyboard.row(*row3)
-            
-            row4.append(InlineKeyboardButton(south_text, callback_data="orient_South"))
-            row4.append(InlineKeyboardButton(west_text, callback_data="orient_West"))
-            keyboard.row(*row4)
-            
+            directions_row.append(InlineKeyboardButton(east_text, callback_data="orient_East"))
+            directions_row.append(InlineKeyboardButton(north_text, callback_data="orient_North"))
+            directions_row.append(InlineKeyboardButton(south_text, callback_data="orient_South"))
+            directions_row.append(InlineKeyboardButton(west_text, callback_data="orient_West"))
+            keyboard.row(*directions_row)
+
             # Courtyard направления только для блока A
             if block == "A":
                 row5 = []
@@ -76,6 +74,31 @@ def selection_menu(
                 row6.append(InlineKeyboardButton(courtyard_south_text, callback_data="orient_Courtyard_South"))
                 row6.append(InlineKeyboardButton(courtyard_west_text, callback_data="orient_Courtyard_West"))
                 keyboard.row(*row6)
+                
+            # Level selection (shown only if orientation is selected)
+            if orientation:
+                # First row - GF to L5 (6 buttons)
+                level_row1 = []
+                gf_text = "✅ GF" if level == "GF" else "🏢 GF"
+                level_row1.append(InlineKeyboardButton(gf_text, callback_data=f"level_{inspection}_{block}_{orientation}_GF"))
+                for i in range(1, 6):
+                    level_text = f"✅ L{i}" if level == f"L{i}" else f"L{i}"
+                    level_row1.append(InlineKeyboardButton(level_text, callback_data=f"level_{inspection}_{block}_{orientation}_L{i}"))
+                keyboard.row(*level_row1)
+                
+                # Second row - L6 to L11 (6 buttons)
+                level_row2 = []
+                for i in range(6, 12):
+                    level_text = f"✅ L{i}" if level == f"L{i}" else f"L{i}"
+                    level_row2.append(InlineKeyboardButton(level_text, callback_data=f"level_{inspection}_{block}_{orientation}_L{i}"))
+                keyboard.row(*level_row2)
+                
+                # Show confirm button when all parameters are selected
+                if level:
+                    keyboard.add(
+                        InlineKeyboardButton("📎 Upload Pictures", 
+                                           callback_data=f"confirm_{inspection}_{block}_{orientation}_{level}")
+                    )
     
     return keyboard
 
@@ -91,26 +114,18 @@ def level_menu(inspection: str, block: str, orientation: str) -> InlineKeyboardM
     """
     keyboard = InlineKeyboardMarkup()
     
-    # First row - Ground Floor
-    keyboard.add(InlineKeyboardButton("🏢 GF", callback_data=f"level_{inspection}_{block}_{orientation}_GF"))
+    # First row - GF to L5 (6 buttons)
+    row1 = []
+    row1.append(InlineKeyboardButton("🏢 GF", callback_data=f"level_{inspection}_{block}_{orientation}_GF"))
+    for i in range(1, 6):
+        row1.append(InlineKeyboardButton(f"L{i}", callback_data=f"level_{inspection}_{block}_{orientation}_L{i}"))
+    keyboard.row(*row1)
     
-    # Second row - L1 to L4
+    # Second row - L6 to L11 (6 buttons)
     row2 = []
-    for i in range(1, 5):
+    for i in range(6, 12):
         row2.append(InlineKeyboardButton(f"L{i}", callback_data=f"level_{inspection}_{block}_{orientation}_L{i}"))
     keyboard.row(*row2)
-    
-    # Third row - L5 to L8
-    row3 = []
-    for i in range(5, 9):
-        row3.append(InlineKeyboardButton(f"L{i}", callback_data=f"level_{inspection}_{block}_{orientation}_L{i}"))
-    keyboard.row(*row3)
-    
-    # Fourth row - L9 to L11
-    row4 = []
-    for i in range(9, 12):
-        row4.append(InlineKeyboardButton(f"L{i}", callback_data=f"level_{inspection}_{block}_{orientation}_L{i}"))
-    keyboard.row(*row4)
     
     # Button to return to selection of parameters
     keyboard.add(
@@ -133,15 +148,8 @@ def confirm_selection_menu(inspection: str, block: str, orientation: str, level:
     keyboard = InlineKeyboardMarkup(row_width=1)
     
     keyboard.add(
-        InlineKeyboardButton("✅ Confirm and Upload Photos", 
+        InlineKeyboardButton("📎 Upload Pictures", 
                            callback_data=f"confirm_{inspection}_{block}_{orientation}_{level}")
-    )
-    keyboard.add(
-        InlineKeyboardButton("⬅️ Back to Level Selection", 
-                           callback_data=f"back_to_level_{inspection}_{block}_{orientation}")
-    )
-    keyboard.add(
-        InlineKeyboardButton("🏠 Start Over", callback_data="start_over")
     )
     
     return keyboard

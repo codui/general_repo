@@ -43,9 +43,10 @@ def register_handlers(bot: AsyncTeleBot):
         # Сохраняем выбор в состоянии пользователя
         async with bot.retrieve_data(call.from_user.id, call.message.chat.id) as data:
             data['inspection'] = inspection
-            # Сбрасываем блок и ориентацию при смене инспекции
+            # Сбрасываем блок, ориентацию и уровень при смене инспекции
             data.pop('block', None)
             data.pop('orientation', None)
+            data.pop('level', None)
         
         # Обновляем клавиатуру с выбранной инспекцией
         await bot.edit_message_reply_markup(
@@ -72,8 +73,9 @@ def register_handlers(bot: AsyncTeleBot):
                 return
             
             data['block'] = block
-            # Сбрасываем ориентацию при смене блока
+            # Сбрасываем ориентацию и уровень при смене блока
             data.pop('orientation', None)
+            data.pop('level', None)
         
         # Обновляем клавиатуру с выбранными инспекцией и блоком
         await bot.edit_message_reply_markup(
@@ -102,45 +104,15 @@ def register_handlers(bot: AsyncTeleBot):
                 return
             
             data['orientation'] = orientation
+            # Сбрасываем уровень при смене ориентации
+            data.pop('level', None)
         
-        # Переходим к состоянию выбора уровня
-        await bot.set_state(call.from_user.id, PhotoUploadStates.selecting_level, call.message.chat.id)
-        
-        # Удаляем старое сообщение с картинкой схемы
-        await bot.delete_message(call.message.chat.id, call.message.message_id)
-        
-        # Подготавливаем текст для выбора уровня
-        level_text = f"""📊 **Level Selection**
-
-**Selected parameters:**
-• Inspection: **{inspection}**
-• Block: **{block}**  
-• Orientation: **{escape_markdown(orientation)}**
-
-**Choose level (floor):**"""
-
-        # Путь к схеме конкретного блока
-        scheme_path = os.path.join("app", "assets", "images", "scheme", f"scheme_block_{block}.png")
-        
-        # Отправляем новое сообщение с картинкой схемы блока
-        if os.path.exists(scheme_path):
-            with open(scheme_path, 'rb') as photo:
-                await bot.send_photo(
-                    call.message.chat.id,
-                    photo,
-                    caption=level_text,
-                    reply_markup=level_menu(inspection, block, orientation),
-                    parse_mode='Markdown'
-                )
-        else:
-            # Если файл схемы блока не найден, отправляем только текст
-            logger.warning(f"Block scheme image not found at {scheme_path}")
-            await bot.send_message(
-                call.message.chat.id,
-                level_text + BLOCK_SCHEME_NOT_FOUND_WARNING.format(block),
-                reply_markup=level_menu(inspection, block, orientation),
-                parse_mode='Markdown'
-            )
+        # Обновляем клавиатуру с выбранными параметрами, включая кнопки уровня
+        await bot.edit_message_reply_markup(
+            call.message.chat.id,
+            call.message.message_id,
+            reply_markup=selection_menu(inspection=inspection, block=block, orientation=orientation)
+        )
         
         await bot.answer_callback_query(call.id, f"✅ Selected orientation: {orientation}")
         logger.info(f"User {call.from_user.id} selected orientation: {orientation}")
@@ -173,25 +145,11 @@ def register_handlers(bot: AsyncTeleBot):
         # Переходим к состоянию подтверждения
         await bot.set_state(call.from_user.id, PhotoUploadStates.confirming_selection, call.message.chat.id)
         
-        # Показываем подтверждение выбора
-        confirm_text = f"""✅ **Confirm Selection**
-
-**Selected parameters:**
-• **Inspection:** {inspection}
-• **Block:** {block}
-• **Orientation:** {escape_markdown(orientation)}
-• **Level:** {level}
-
-**Save path:** `structure_inspections/{inspection}/{block}/{level}/{escape_markdown(orientation)}/unsorted/`
-
-Ready to upload photos?"""
-
-        await bot.edit_message_caption(
-            confirm_text,
+        # Обновляем клавиатуру с выбранным уровнем и кнопкой подтверждения
+        await bot.edit_message_reply_markup(
             call.message.chat.id,
             call.message.message_id,
-            reply_markup=confirm_selection_menu(inspection, block, orientation, level),
-            parse_mode='Markdown'
+            reply_markup=selection_menu(inspection=inspection, block=block, orientation=orientation, level=level)
         )
         
         await bot.answer_callback_query(call.id, f"✅ Selected level: {level}")
@@ -202,29 +160,43 @@ Ready to upload photos?"""
         """
         Handle selection confirmation - ready for photo upload.
         """
+        # Парсим данные из callback: "confirm_BW_A_East_L5"
+        parts = call.data.replace("confirm_", "").split("_")
+        if len(parts) < 4:
+            await bot.answer_callback_query(call.id, "❌ Invalid selection data!")
+            return
+        
+        inspection = parts[0]
+        block = parts[1]
+        orientation = "_".join(parts[2:-1])  # Поддержка "Courtyard_East"
+        level = parts[-1]
+        
         # Переходим к состоянию ожидания фотографий
         await bot.set_state(call.from_user.id, PhotoUploadStates.waiting_for_photos, call.message.chat.id)
         
-        upload_text = """📸 **Ready for Photo Upload**
+        # Удаляем старое сообщение с фотографией
+        await bot.delete_message(call.message.chat.id, call.message.message_id)
+        
+        # Отправляем новое сообщение с информацией о выбранных параметрах
+        upload_text = f"""📸 **Now Please Upload Pictures**
 
-✅ Parameters confirmed! 
-
-**Now send your photos:**
-• You can send **multiple photos** at once
-• Supported formats: JPG, PNG
+**Selected parameters:**
+• **Inspection:** {inspection}
+• **Block:** {block}
+• **Orientation:** {escape_markdown(orientation)}
+• **Level:** {level}
 
 **Commands:**
 • /cancel - cancel and start over"""
 
-        await bot.edit_message_caption(
-            upload_text,
+        await bot.send_message(
             call.message.chat.id,
-            call.message.message_id,
+            upload_text,
             parse_mode='Markdown'
         )
         
         await bot.answer_callback_query(call.id, "📸 Ready! Send your photos now.")
-        logger.info(f"User {call.from_user.id} confirmed selection, waiting for photos")
+        logger.info(f"User {call.from_user.id} confirmed selection: {inspection}/{block}/{orientation}/{level}, waiting for photos")
     
     @bot.callback_query_handler(func=lambda call: call.data == "back_to_selection")
     async def handle_back_to_selection(call: CallbackQuery):

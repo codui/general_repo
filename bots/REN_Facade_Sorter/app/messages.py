@@ -3,18 +3,7 @@ Text messages and constants for the REN Facade Sorter bot.
 """
 
 # Стартовое сообщение для начала работы с ботом
-WELCOME_MESSAGE = """👋 Welcome! This bot will help you upload and sort facade photos of the building.
-
-📸 **How it works:**
-1. Choose inspection type (BW or SR)
-2. Select building block (A or B)
-3. Specify orientation (cardinal direction or courtyard)
-4. Choose level (GF or L1-L11)
-5. Upload photos
-
-🔄 The bot will automatically save photos to the correct folder.
-
-**Please provide the details of the apartment for which you would like to upload photos:**"""
+WELCOME_MESSAGE = """**Please provide the details of the apartment for which you would like to upload photos:**"""
 
 # Сообщение помощи
 HELP_MESSAGE = """🆘 *REN Facade Sorter Bot Help*
