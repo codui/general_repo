@@ -391,26 +391,14 @@ async def save_photos_immediate(bot: AsyncTeleBot, user_id: int, chat_id: int, p
         
         # Создаем отчет
         file_word = "file" if len(photos) == 1 else "files"
-        report_text = f"""✅ **Upload Complete!**
-
-**Location:**
-• Inspection: **{inspection}**
-• Block: **{block}**
-• Orientation: **{orientation.replace('_', ' ')}**
-• Level: **{level}**
-
-📊 **Results:**
-• ✅ Successfully saved: **{saved_count}** {file_word}
-• ❌ Failed to save: **{failed_count}** {file_word}
-
-📁 **Save path:**
-`{save_path}`
-
-**What's next?**"""
-
-        if failed_count > 0:
-            report_text += f"\n\n⚠️ **Warning:** {failed_count} {file_word} failed to save. Check logs for details."
+        report_text = f"✅ Successfully saved: **{saved_count}** {file_word}"
         
+        # Показываем ошибки только если они были
+        if failed_count > 0:
+            report_text += f"\n❌ Failed to save: **{failed_count}** {file_word}"
+        
+        report_text += "\n\n📸 *Continue uploading photos or press* **Another Location** *to change location*"
+
         # Удаляем сообщение прогресса если оно было и отправляем финальный отчет
         if progress_msg:
             await bot.delete_message(chat_id, progress_msg.message_id)

@@ -330,63 +330,6 @@ def register_handlers(bot: AsyncTeleBot):
         await bot.answer_callback_query(call.id, "⬅️ Back to level selection")
         logger.info(f"User {call.from_user.id} went back to level selection")
     
-
-
-    @bot.callback_query_handler(func=lambda call: call.data.startswith("add_more_"))
-    async def handle_add_more(call: CallbackQuery):
-        """
-        Handle add more photos to the same location.
-        """
-        user_id = call.from_user.id
-        chat_id = call.message.chat.id
-        
-        # Парсим данные: "add_more_BW_A_East_L5"
-        parts = call.data.replace("add_more_", "").split("_")
-        if len(parts) < 4:
-            await bot.answer_callback_query(call.id, "❌ Invalid location data!")
-            return
-        
-        inspection = parts[0]
-        block = parts[1]
-        orientation = "_".join(parts[2:-1])  # Поддержка "Courtyard_East"
-        level = parts[-1]
-        
-        # Сохраняем данные локации
-        async with bot.retrieve_data(user_id, chat_id) as data:
-            data.update({
-                'inspection': inspection,
-                'block': block,
-                'orientation': orientation,
-                'level': level,
-                'photos': []  # Очищаем предыдущие фото
-            })
-        
-        # Переходим к состоянию ожидания фотографий
-        await bot.set_state(user_id, PhotoUploadStates.waiting_for_photos, chat_id)
-        
-        upload_text = f"""📸 **Ready for More Photos**
-
-**Current location:**
-• Inspection: **{inspection}**
-• Block: **{block}**
-• Orientation: **{orientation.replace('_', ' ')}**
-• Level: **{level}**
-
-Send your photos to continue uploading to this location.
-
-**Commands:**
-• /cancel - cancel and start over"""
-
-        await bot.edit_message_text(
-            upload_text,
-            chat_id,
-            call.message.message_id,
-            parse_mode='Markdown'
-        )
-        
-        await bot.answer_callback_query(call.id, "📸 Ready for more photos!")
-        logger.info(f"User {user_id} chose to add more photos to {inspection}/{block}/{level}/{orientation}")
-    
     @bot.callback_query_handler(func=lambda call: call.data in ["next_location", "start_over"])
     async def handle_start_over(call: CallbackQuery):
         """
@@ -402,10 +345,28 @@ Send your photos to continue uploading to this location.
         # Возвращаемся к начальному состоянию
         await bot.set_state(user_id, PhotoUploadStates.selecting_parameters, chat_id)
         
-        # Удаляем текущее сообщение
-        await bot.delete_message(chat_id, call.message.message_id)
+        # Извлекаем только информацию о сохраненных файлах из текущего сообщения
+        current_text = call.message.text or ""
+        lines = current_text.split('\n')
         
-        # Отправляем начальное меню с картинкой схемы
+        # Находим строки с результатами сохранения
+        result_lines = []
+        for line in lines:
+            if "Successfully saved:" in line or "Failed to save:" in line:
+                result_lines.append(line)
+        
+        # Формируем сокращенный текст
+        short_text = '\n'.join(result_lines) if result_lines else "✅ Files saved"
+        
+        # Обновляем сообщение - убираем кнопку и сокращаем текст
+        await bot.edit_message_text(
+            short_text,
+            chat_id,
+            call.message.message_id,
+            parse_mode='Markdown'
+        )
+        
+        # Отправляем новое сообщение с картинкой схемы
 
         # Путь к общей схеме
         scheme_path = os.path.join("app", "assets", "images", "scheme", "scheme.png")
