@@ -103,58 +103,6 @@ def selection_menu(
     return keyboard
 
 
-def level_menu(inspection: str, block: str, orientation: str) -> InlineKeyboardMarkup:
-    """
-    Level selection menu (GF + L1-L11).
-    
-    Args:
-        inspection: Selected inspection
-        block: Selected block
-        orientation: Selected orientation
-    """
-    keyboard = InlineKeyboardMarkup()
-    
-    # First row - GF to L5 (6 buttons)
-    row1 = []
-    row1.append(InlineKeyboardButton("🏢 GF", callback_data=f"level_{inspection}_{block}_{orientation}_GF"))
-    for i in range(1, 6):
-        row1.append(InlineKeyboardButton(f"L{i}", callback_data=f"level_{inspection}_{block}_{orientation}_L{i}"))
-    keyboard.row(*row1)
-    
-    # Second row - L6 to L11 (6 buttons)
-    row2 = []
-    for i in range(6, 12):
-        row2.append(InlineKeyboardButton(f"L{i}", callback_data=f"level_{inspection}_{block}_{orientation}_L{i}"))
-    keyboard.row(*row2)
-    
-    # Button to return to selection of parameters
-    keyboard.add(
-        InlineKeyboardButton("⬅️ Back to Selection", callback_data="back_to_selection")
-    )
-    
-    return keyboard
-
-
-def confirm_selection_menu(inspection: str, block: str, orientation: str, level: str) -> InlineKeyboardMarkup:
-    """
-    Confirmation menu showing selected parameters.
-    
-    Args:
-        inspection: Selected inspection
-        block: Selected block
-        orientation: Selected orientation  
-        level: Selected level
-    """
-    keyboard = InlineKeyboardMarkup(row_width=1)
-    
-    keyboard.add(
-        InlineKeyboardButton("📎 Upload Pictures", 
-                           callback_data=f"confirm_{inspection}_{block}_{orientation}_{level}")
-    )
-    
-    return keyboard
-
-
 def post_upload_menu(inspection: str, block: str, orientation: str, level: str) -> InlineKeyboardMarkup:
     """
     Menu shown after successful photo upload with options to continue.

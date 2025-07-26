@@ -4,9 +4,9 @@ Callback handlers for inline buttons in the REN Facade Sorter bot.
 
 import os
 from telebot.async_telebot import AsyncTeleBot
-from telebot.types import CallbackQuery
+from telebot.types import CallbackQuery, InputMediaPhoto
 from app.utils.logger import logger
-from app.keyboards import selection_menu, level_menu, confirm_selection_menu
+from app.keyboards import selection_menu
 from app.states import PhotoUploadStates
 from app.messages import WELCOME_MESSAGE, SCHEME_NOT_FOUND_WARNING, BLOCK_SCHEME_NOT_FOUND_WARNING
 
@@ -42,18 +42,32 @@ def register_handlers(bot: AsyncTeleBot):
         
         # Сохраняем выбор в состоянии пользователя
         async with bot.retrieve_data(call.from_user.id, call.message.chat.id) as data:
+            had_block = 'block' in data and data['block'] is not None
             data['inspection'] = inspection
             # Сбрасываем блок, ориентацию и уровень при смене инспекции
             data.pop('block', None)
             data.pop('orientation', None)
             data.pop('level', None)
         
-        # Обновляем клавиатуру с выбранной инспекцией
-        await bot.edit_message_reply_markup(
-            call.message.chat.id,
-            call.message.message_id,
-            reply_markup=selection_menu(inspection=inspection)
-        )
+        # Если до этого был выбран блок, меняем картинку на общую схему
+        scheme_path = os.path.join("app", "assets", "images", "scheme", "scheme.png")
+        if had_block and os.path.exists(scheme_path):
+            from telebot.types import InputMediaPhoto
+            with open(scheme_path, 'rb') as photo:
+                media = InputMediaPhoto(photo, caption=WELCOME_MESSAGE, parse_mode='Markdown')
+                await bot.edit_message_media(
+                    media,
+                    call.message.chat.id,
+                    call.message.message_id,
+                    reply_markup=selection_menu(inspection=inspection)
+                )
+        else:
+            # Обновляем клавиатуру с выбранной инспекцией
+            await bot.edit_message_reply_markup(
+                call.message.chat.id,
+                call.message.message_id,
+                reply_markup=selection_menu(inspection=inspection)
+            )
         
         await bot.answer_callback_query(call.id, f"✅ Selected inspection: {inspection}")
         logger.info(f"User {call.from_user.id} selected inspection: {inspection}")
@@ -61,7 +75,7 @@ def register_handlers(bot: AsyncTeleBot):
     @bot.callback_query_handler(func=lambda call: call.data.startswith("block_"))
     async def handle_block_selection(call: CallbackQuery):
         """
-        Handle building block selection (A/B).
+        Handle building block selection (A/B) and update scheme image.
         """
         block = call.data.split("_")[1]  # "block_A" -> "A"
         
@@ -77,12 +91,29 @@ def register_handlers(bot: AsyncTeleBot):
             data.pop('orientation', None)
             data.pop('level', None)
         
-        # Обновляем клавиатуру с выбранными инспекцией и блоком
-        await bot.edit_message_reply_markup(
-            call.message.chat.id,
-            call.message.message_id,
-            reply_markup=selection_menu(inspection=inspection, block=block)
-        )
+        # Путь к схеме конкретного блока
+        scheme_path = os.path.join("app", "assets", "images", "scheme", f"scheme_block_{block}.png")
+        
+        # Обновляем картинку и клавиатуру
+        if os.path.exists(scheme_path):
+            with open(scheme_path, 'rb') as photo:
+                media = InputMediaPhoto(photo, caption=WELCOME_MESSAGE, parse_mode='Markdown')
+                await bot.edit_message_media(
+                    media,
+                    call.message.chat.id,
+                    call.message.message_id,
+                    reply_markup=selection_menu(inspection=inspection, block=block)
+                )
+        else:
+            # Если файл схемы блока не найден, обновляем только клавиатуру и добавляем предупреждение
+            logger.warning(f"Block scheme image not found at {scheme_path}")
+            await bot.edit_message_caption(
+                call.message.chat.id,
+                call.message.message_id,
+                caption=WELCOME_MESSAGE + BLOCK_SCHEME_NOT_FOUND_WARNING.format(block),
+                reply_markup=selection_menu(inspection=inspection, block=block),
+                parse_mode='Markdown'
+            )
         
         await bot.answer_callback_query(call.id, f"✅ Selected block: {block}")
         logger.info(f"User {call.from_user.id} selected block: {block}")
@@ -283,7 +314,7 @@ def register_handlers(bot: AsyncTeleBot):
                     call.message.chat.id,
                     photo,
                     caption=level_text,
-                    reply_markup=level_menu(inspection, block, orientation),
+                    reply_markup=selection_menu(inspection, block, orientation),
                     parse_mode='Markdown'
                 )
         else:
@@ -292,7 +323,7 @@ def register_handlers(bot: AsyncTeleBot):
             await bot.send_message(
                 call.message.chat.id,
                 level_text + BLOCK_SCHEME_NOT_FOUND_WARNING.format(block),
-                reply_markup=level_menu(inspection, block, orientation),
+                reply_markup=selection_menu(inspection, block, orientation),
                 parse_mode='Markdown'
             )
         
