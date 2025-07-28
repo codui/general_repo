@@ -3,7 +3,7 @@ Text messages and constants for the REN Facade Sorter bot.
 """
 
 # Стартовое сообщение для начала работы с ботом
-WELCOME_MESSAGE = """**Please provide the details of the apartment for which you would like to upload photos:**"""
+WELCOME_MESSAGE = ""
 
 # Сообщение помощи
 HELP_MESSAGE = """🆘 *REN Facade Sorter Bot Help*

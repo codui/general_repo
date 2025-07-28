@@ -77,21 +77,28 @@ def selection_menu(
                 
             # Level selection (shown only if orientation is selected)
             if orientation:
-                # First row - GF to L5 (6 buttons)
+                # First row - GF to L3 (4 buttons)
                 level_row1 = []
-                gf_text = "✅ GF" if level == "GF" else "🏢 GF"
+                gf_text = "✅ GF" if level == "GF" else "GF"
                 level_row1.append(InlineKeyboardButton(gf_text, callback_data=f"level_{inspection}_{block}_{orientation}_GF"))
-                for i in range(1, 6):
+                for i in range(1, 4):
                     level_text = f"✅ L{i}" if level == f"L{i}" else f"L{i}"
                     level_row1.append(InlineKeyboardButton(level_text, callback_data=f"level_{inspection}_{block}_{orientation}_L{i}"))
                 keyboard.row(*level_row1)
                 
-                # Second row - L6 to L11 (6 buttons)
+                # Second row - L4 to L7 (4 buttons)
                 level_row2 = []
-                for i in range(6, 12):
+                for i in range(4, 8):
                     level_text = f"✅ L{i}" if level == f"L{i}" else f"L{i}"
                     level_row2.append(InlineKeyboardButton(level_text, callback_data=f"level_{inspection}_{block}_{orientation}_L{i}"))
                 keyboard.row(*level_row2)
+                
+                # Third row - L8 to L11 (4 buttons)
+                level_row3 = []
+                for i in range(8, 12):
+                    level_text = f"✅ L{i}" if level == f"L{i}" else f"L{i}"
+                    level_row3.append(InlineKeyboardButton(level_text, callback_data=f"level_{inspection}_{block}_{orientation}_L{i}"))
+                keyboard.row(*level_row3)
                 
                 # Show confirm button when all parameters are selected
                 if level:
