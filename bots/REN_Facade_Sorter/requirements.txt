@@ -1,0 +1,16 @@
+# Pydantic
+pydantic
+pydantic-settings
+
+# Telegram Bot API
+pytelegrambotapi
+aiohttp
+
+# Python-dotenv
+python-dotenv
+
+# logging
+loguru
+
+# Cache and FSM
+# redis>=5.0.0
